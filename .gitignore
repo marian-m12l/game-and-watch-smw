@@ -1,0 +1,9 @@
+build
+Drivers
+.mxproject
+#Core/Src/porting/zelda_assets*.c
+#scripts/zelda_assets*.dat
+*.srm
+*.sav
+.gdbinit
+*.DS_Store

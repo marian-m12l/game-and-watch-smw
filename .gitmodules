@@ -1,0 +1,3 @@
+[submodule "smw"]
+	path = smw
+	url = https://github.com/marian-m12l/smw.git
