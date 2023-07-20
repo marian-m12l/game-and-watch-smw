@@ -802,7 +802,7 @@ void app_main(void)
     int pitch = 320 * 2; // FIXME WIDTH * BPP; // FIXME 0;
     PpuBeginDrawing(g_my_ppu, pixel_buffer, pitch, g_ppu_render_flags);
     
-    RtlReadSram();
+    // FIXME RtlReadSram();
 
     bool running = true;
     //uint32 lastTick = HAL_GetTick();
@@ -817,10 +817,12 @@ void app_main(void)
 
     common_emu_state.frame_time_10us = (uint16_t)(100000 / FRAMERATE + 0.5f);
 
-    settings_init();
+//    settings_init();
     
-    uint8_t brightness = settings_Backlight_get();
-    lcd_backlight_set(backlightLevels[brightness]);
+//    uint8_t brightness = settings_Backlight_get();
+//    lcd_backlight_set(backlightLevels[brightness]);
+
+    lcd_backlight_set(backlightLevels[6]);  // FIXME
 
     uint32_t prev_buttons = 0;
     uint32_t prev_power_ms = 0;
@@ -978,11 +980,11 @@ void app_main(void)
         continue;
         }*/
         
-        RtlRenderAudio(audiobuffer, AUDIO_BUFFER_LENGTH, 1);
+//        RtlRenderAudio(audiobuffer, AUDIO_BUFFER_LENGTH, 1);
 
-        if (drawFrame) {
+//        if (drawFrame) {
         
-          pcm_submit();
+//          pcm_submit();
           //ZeldaDiscardUnusedAudioFrames();
 
           // TODO Cap framerate to 60fps
@@ -1000,7 +1002,7 @@ void app_main(void)
           renderedFrameCtr++;
           DrawPpuFrameWithPerf();
           prevTime = HAL_GetTick() - prevFrameTick;
-        }
+ //       }
 
         // FIXME if no frame skip
         //if (prevTime < 17) {
