@@ -33,12 +33,18 @@
 #include "gw_linker.h"
 
 // FIXME ??? #include "porting.h"
+#include "smw_assets_in_intflash.h"
+#include "smw_assets_in_ram.h"
+#include "smw_assets_in_extflash.h"
+
+#include "smw/assets/smw_assets.h"
 
 #include "smw/src/config.h"
 #include "smw/src/snes/ppu.h"
 #include "smw/src/types.h"
 #include "smw/src/smw_rtl.h"
 #include "smw/src/common_cpu_infra.h"
+#include "smw/src/smw_spc_player.h"
 
 #include "common.h"
 
@@ -319,6 +325,11 @@ static int g_snes_width, g_snes_height;
 static uint32 g_gamepad_modifiers;
 static uint16 g_gamepad_last_cmd[kGamepadBtn_Count];
 
+bool g_new_ppu = true;
+bool g_other_image = true;
+bool g_debug_flag = false;
+int g_got_mismatch_count;
+
 static uint32 frameCtr = 0;
 static uint32 renderedFrameCtr = 0;
 
@@ -485,11 +496,55 @@ static void set_audio_frequency(uint32_t frequency)
 }
 
 
+const uint8 *g_asset_ptrs[kNumberOfAssets];
+uint32 g_asset_sizes[kNumberOfAssets];
+
+static void LoadAssetsChunk(size_t length, uint8* data) {
+  uint32 number_of_assets = *(uint32 *)(data);
+  uint32 offset = 4 + number_of_assets * 8;
+  for (size_t i = 0; i < number_of_assets; i++) {
+    uint32 index = *(uint32 *)(data + 4 + i * 8);
+    uint32 size = *(uint32 *)(data + 4 + i * 8 + 4);
+    offset = (offset + 3) & ~3;
+    if ((uint64)offset + size > length)
+      Die("Assets file corruption");
+    g_asset_sizes[index] = size;
+    g_asset_ptrs[index] = data + offset;
+    offset += size;
+  }
+}
+
+static void LoadAssets() {
+  // Load some assets with assets in extflash
+  LoadAssetsChunk(smw_extflash_assets_length, smw_extflash_assets);
+
+  // Load some assets with assets in intflash
+  LoadAssetsChunk(smw_intflash_assets_length, smw_intflash_assets);
+
+  // Load some assets with assets in ram
+  LoadAssetsChunk(smw_ram_assets_length, smw_ram_assets);
+
+  // Make sure all assets were loaded
+  for (size_t i = 0; i < kNumberOfAssets; i++) {
+    if (g_asset_ptrs[i] == 0) {
+      Die("Missing asset");
+    }
+  }
+
+}
+
+MemBlk FindInAssetArray(int asset, int idx) {
+  return FindIndexInMemblk((MemBlk) { g_asset_ptrs[asset], g_asset_sizes[asset] }, idx);
+}
+
+
 // FIXME What renders to g_my_pixels and g_pixels ???
 void RtlDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
   // TODO SmwDrawPpuFrame();
   g_rtl_game_info->draw_ppu_frame();
-  /*uint8 *ppu_pixels = g_other_image ? g_my_pixels : g_pixels;
+
+  // TODO PPU should draw directly to pixel_buffer (i.e. framebuffer) ?
+  /*uint8 *ppu_pixels = g_my_pixels;// g_other_image ? g_my_pixels : g_pixels;
   for (size_t y = 0, y_end = g_snes_height; y < y_end; y++)
     memcpy((uint8 *)pixel_buffer + y * pitch, ppu_pixels + y * 256 * 4, 256 * 4);*/
 }
@@ -499,8 +554,6 @@ static void DrawPpuFrameWithPerf() {
   wdog_refresh();
   uint8 *pixel_buffer = framebuffer + 320*8 + 32;    // Start 8 rows from the top, 32 pixels from left
   int pitch = 320 * 2; // FIXME WIDTH * BPP; // FIXME 0;
-
-  //ZeldaDrawPpuFrame(pixel_buffer, pitch, g_ppu_render_flags); // FIXME SHOULD DRAW RGB565 !!!
 
   static runtime_stats_t stats;
   static bool statsInit = false;
@@ -725,7 +778,9 @@ void app_main(void)
 {
     wdog_enable();
 
-    // FIXME LoadAssets();
+    LoadAssets();
+    
+    Snes *snes = SnesInit(NULL, 0);
     
     // FIXME ZeldaInitialize();
 
@@ -737,12 +792,15 @@ void app_main(void)
     // FIXME ZeldaSetLanguage(STRINGIZE_VALUE_OF(DIALOGUES_LANGUAGE));
     
 
-    g_spc_player = SpcPlayer_Create();
-    SpcPlayer_Initialize(g_spc_player);
+    g_spc_player = SmwSpcPlayer_Create();
+    g_spc_player->initialize(g_spc_player);
     
     // FIXME ???
     //PpuBeginDrawing(snes->snes_ppu, g_pixels, 256 * 4, 0);
-    //PpuBeginDrawing(snes->my_ppu, g_my_pixels, 256 * 4, 0);
+    //PpuBeginDrawing(g_my_ppu, g_my_pixels, 256 * 4, 0);
+    uint8 *pixel_buffer = framebuffer + 320*8 + 32;    // Start 8 rows from the top, 32 pixels from left
+    int pitch = 320 * 2; // FIXME WIDTH * BPP; // FIXME 0;
+    PpuBeginDrawing(g_my_ppu, pixel_buffer, pitch, g_ppu_render_flags);
     
     RtlReadSram();
 

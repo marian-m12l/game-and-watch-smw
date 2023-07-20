@@ -177,7 +177,7 @@ SECTIONS
   . = ALIGN(4);
   ._spc_player_bss :
   {
-    build/spc_player.o (.bss .bss*)   /* 64 KB of APU RAM */
+    build/smw_spc_player.o (.bss .bss*)   /* 64 KB of APU RAM */
     *(.savestate_buffer)              /* DTCMRAM would probably be better used for something else */
   } >DTCMRAM
 
@@ -191,6 +191,7 @@ SECTIONS
 
     __ahbram_hot_start__ = .;
 
+    build/smw_spc_player.o (.text .text* .rodata .rodata*)
     
     __ahbram_hot_end__ = .;
     
@@ -206,7 +207,7 @@ SECTIONS
     . = ALIGN(4);
     __ram_exec_start__ = .;
     
-    /* build/smw_assets_in_ram.o (.text .text* .rodata .rodata*) */
+    build/smw_assets_in_ram.o (.text .text* .rodata .rodata*)
 
     __ram_exec_end__ = .;
     . = ALIGN(4);
@@ -249,7 +250,17 @@ SECTIONS
     . = ALIGN(4);
     _extflash = .;
 
-    /* build/smw_assets_in_extflash.o (.text .text* .rodata .rodata*) */
+    build/smw_00.o (.text .text* .rodata .rodata*)
+    build/smw_01.o (.text .text* .rodata .rodata*)
+    build/smw_02.o (.text .text* .rodata .rodata*)
+    build/smw_03.o (.text .text* .rodata .rodata*)
+    build/smw_04.o (.text .text* .rodata .rodata*)
+    build/smw_05.o (.text .text* .rodata .rodata*)
+    build/smw_07.o (.text .text* .rodata .rodata*)
+    build/smw_0c.o (.text .text* .rodata .rodata*)
+    build/smw_0d.o (.text .text* .rodata .rodata*)
+
+    build/smw_assets_in_extflash.o (.text .text* .rodata .rodata*)
 
     __extflash_end__ = .;
   } >EXTFLASH

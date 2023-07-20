@@ -1,8 +1,8 @@
 build
 Drivers
 .mxproject
-#Core/Src/porting/zelda_assets*.c
-#scripts/zelda_assets*.dat
+Core/Src/porting/smw_assets*.c
+scripts/smw_assets*.dat
 *.srm
 *.sav
 .gdbinit

@@ -94,18 +94,36 @@ Core/Src/crc32.c \
 Core/Src/stm32h7xx_it.c \
 Core/Src/stm32h7xx_hal_msp.c \
 Core/Src/system_stm32h7xx.c \
+Core/Src/porting/smw_assets_in_intflash.c \
+Core/Src/porting/smw_assets_in_ram.c \
+Core/Src/porting/smw_assets_in_extflash.c \
 Core/Src/porting/common.c \
 smw/src/smw_rtl.c \
-smw/src/snes/ppu.c \
-smw/src/snes/dma.c \
+smw/src/smw_00.c \
+smw/src/smw_01.c \
+smw/src/smw_02.c \
+smw/src/smw_03.c \
+smw/src/smw_04.c \
+smw/src/smw_05.c \
+smw/src/smw_07.c \
+smw/src/smw_0c.c \
+smw/src/smw_0d.c \
+smw/src/smw_cpu_infra.c \
+smw/src/smw_spc_player.c \
 smw/src/config.c \
 smw/src/common_rtl.c \
 smw/src/common_cpu_infra.c \
-smw/src/smw_spc_player.c \
 smw/src/util.c \
+smw/src/snes/ppu.c \
+smw/src/snes/dma.c \
 smw/src/snes/dsp.c \
 smw/src/snes/apu.c \
 smw/src/snes/spc.c \
+smw/src/snes/snes.c \
+smw/src/snes/cpu.c \
+smw/src/snes/cart.c \
+smw/src/snes/input.c \
+smw/src/snes/tracing.c \
 
 
 
@@ -271,6 +289,7 @@ AS_INCLUDES =
 C_INCLUDES =  \
 -ICore/Inc \
 -ICore/Inc/porting \
+-Ismw \
 -IDrivers/STM32H7xx_HAL_Driver/Inc \
 -IDrivers/STM32H7xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32H7xx/Include \
@@ -365,7 +384,7 @@ $(BUILD_DIR)/%.o: %.c Makefile $(SDK_HEADERS) | $(BUILD_DIR)
 $(BUILD_DIR)/%.o: %.s Makefile $(SDK_HEADERS) | $(BUILD_DIR)
 	$(AS) -c $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) Makefile
+$(BUILD_DIR)/$(TARGET).elf: assets_extraction $(OBJECTS) Makefile
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 	$(SZ) $@
 
@@ -374,6 +393,18 @@ $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	
 $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	$(BIN) $< $@	
+	
+
+assets_extraction: Core/Src/porting/smw_assets_in_extflash.c Core/Src/porting/smw_assets_in_intflash.c Core/Src/porting/smw_assets_in_ram.c
+
+Core/Src/porting/smw_assets_%.c: scripts/bundle_all_assets.py scripts/update_all_assets.py smw/assets/smw_assets.dat | $(BUILD_DIR)
+	$(PYTHON) ./scripts/bundle_all_assets.py
+	$(PYTHON) ./scripts/update_all_assets.py
+
+
+smw/assets/smw_assets.dat: smw/assets/smw.sfc | $(BUILD_DIR)
+	$(ECHO) "Extracting game resources"; \
+	cd smw/assets; $(PYTHON) restool.py --extract-from-rom -r smw.sfc; \
 	
 	
 $(BUILD_DIR):
@@ -458,6 +489,7 @@ debug: $(BUILD_DIR)/$(TARGET).elf
 #######################################
 clean:
 	-rm -fR $(BUILD_DIR)
+	-rm -fR Core/Src/porting/smw_assets_*.c
 	cd smw && make clean
   
 #######################################
