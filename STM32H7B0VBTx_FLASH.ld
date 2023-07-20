@@ -178,6 +178,7 @@ SECTIONS
   ._spc_player_bss :
   {
     build/smw_spc_player.o (.bss .bss*)   /* 64 KB of APU RAM */
+    build/ppu.o (.bss .bss*)   /* 64 KB of APU RAM */
     *(.savestate_buffer)              /* DTCMRAM would probably be better used for something else */
   } >DTCMRAM
 
