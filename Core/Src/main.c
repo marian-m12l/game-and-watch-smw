@@ -38,6 +38,7 @@
 #include "smw/src/snes/ppu.h"
 #include "smw/src/types.h"
 #include "smw/src/smw_rtl.h"
+#include "smw/src/common_cpu_infra.h"
 
 #include "common.h"
 
@@ -486,6 +487,8 @@ static void set_audio_frequency(uint32_t frequency)
 
 // FIXME What renders to g_my_pixels and g_pixels ???
 void RtlDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
+  // TODO SmwDrawPpuFrame();
+  g_rtl_game_info->draw_ppu_frame();
   /*uint8 *ppu_pixels = g_other_image ? g_my_pixels : g_pixels;
   for (size_t y = 0, y_end = g_snes_height; y < y_end; y++)
     memcpy((uint8 *)pixel_buffer + y * pitch, ppu_pixels + y * 256 * 4, 256 * 4);*/

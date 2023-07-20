@@ -98,10 +98,14 @@ Core/Src/porting/common.c \
 smw/src/smw_rtl.c \
 smw/src/snes/ppu.c \
 smw/src/snes/dma.c \
-smw/src/spc_player.c \
+smw/src/config.c \
+smw/src/common_rtl.c \
+smw/src/common_cpu_infra.c \
+smw/src/smw_spc_player.c \
 smw/src/util.c \
 smw/src/snes/dsp.c \
 smw/src/snes/apu.c \
+smw/src/snes/spc.c \
 
 
 
