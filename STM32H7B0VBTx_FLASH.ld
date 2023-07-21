@@ -143,8 +143,8 @@ SECTIONS
     build/ppu.o (.text .text*)
     build/smw_rtl.o (.text .text*)
 
-    __itcram_hot_end__ = .;
     . = ALIGN(4);
+    __itcram_hot_end__ = .;
 
     __itcram_end__ = .;
   } >ITCMRAM AT> EXTFLASH
@@ -156,6 +156,8 @@ SECTIONS
   ._dtcram_hot :
   {
     __dtcram_start__ = .;
+    
+    . = ALIGN(4);
     __dtcram_hot_start__ = .;
     
     build/dma.o (.rodata .rodata*)
@@ -163,7 +165,9 @@ SECTIONS
     build/ppu.o (.rodata .rodata*)
     build/smw_rtl.o (.rodata .rodata*)
 
+    . = ALIGN(4);
     __dtcram_hot_end__ = .;
+
   } >DTCMRAM AT> EXTFLASH
   
 
@@ -177,8 +181,8 @@ SECTIONS
   . = ALIGN(4);
   ._spc_player_bss :
   {
-    build/smw_spc_player.o (.bss .bss*)   /* 64 KB of APU RAM */
-    build/ppu.o (.bss .bss*)   /* 64 KB of APU RAM */
+    build/smw_spc_player.o (.bss .bss*)
+    build/apu.o (.bss .bss*)   /* 64 KB of APU RAM */
     *(.savestate_buffer)              /* DTCMRAM would probably be better used for something else */
   } >DTCMRAM
 
@@ -190,10 +194,12 @@ SECTIONS
   {
     __ahbram_start__ = .;
 
+    . = ALIGN(4);
     __ahbram_hot_start__ = .;
 
     build/smw_spc_player.o (.text .text* .rodata .rodata*)
     
+    . = ALIGN(4);
     __ahbram_hot_end__ = .;
     
     __ahbram_end__ = .;
@@ -210,8 +216,8 @@ SECTIONS
     
     build/smw_assets_in_ram.o (.text .text* .rodata .rodata*)
 
-    __ram_exec_end__ = .;
     . = ALIGN(4);
+    __ram_exec_end__ = .;
     
   } >RAM AT> EXTFLASH
 
