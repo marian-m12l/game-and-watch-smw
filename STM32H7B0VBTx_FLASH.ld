@@ -82,7 +82,7 @@ __EXTFLASH_BASE__ = 0x90000000;  /* Beginning of addressable extflash addresses 
 __EXTFLASH_START__ = __EXTFLASH_BASE__ + __EXTFLASH_OFFSET__;  /* Beginning of where we're going to store emulator and rom data */
 
 
-__SAVEFLASH_LENGTH__ = 8192 + (ENABLE_SAVESTATE ? (4096 * 68) : 0);
+__SAVEFLASH_LENGTH__ = 4096 + (ENABLE_SAVESTATE ? (4096 * 68) : 0);
 __CONFIGFLASH_LENGTH__ = 4096;
 __FBFLASH_LENGTH__ = ENABLE_SCREENSHOT ? ((320 * 240 * 2 + 4095) / 4096) * 4096 : 0;
 

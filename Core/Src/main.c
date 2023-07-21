@@ -337,7 +337,11 @@ struct SpcPlayer *g_spc_player;
 
 
 #define AUDIO_SAMPLE_RATE   (16000)   // SAI Sample rate
+#if LIMIT_30FPS != 0
+#define FRAMERATE 30
+#else
 #define FRAMERATE 60
+#endif /* LIMIT_30FPS */
 #define AUDIO_BUFFER_LENGTH 534 // (AUDIO_SAMPLE_RATE / FRAMERATE)  // SNES is 60 fps FIXME limited to 30 fps
 #define AUDIO_BUFFER_LENGTH_DMA (2 * AUDIO_BUFFER_LENGTH) // ((2 * AUDIO_SAMPLE_RATE) / FRAMERATE)  // DMA buffer contains 2 frames worth of audio samples in a ring buffer
 
@@ -715,13 +719,14 @@ void store_save(const uint8_t *flash_ptr, const uint8_t *data, size_t size)
 }
 
 // TODO In header file??
-uint8_t SAVE_SRAM_EXTFLASH[8192]  __attribute__((section (".saveflash"))) __attribute__((aligned(4096)));
+// SRAM is 2KB --> take a whole 4KB sector to avoid extflash misalignment
+uint8_t SAVE_SRAM_EXTFLASH[4096]  __attribute__((section (".saveflash"))) __attribute__((aligned(4096)));
 
 uint8_t* readSramImpl() {
   return SAVE_SRAM_EXTFLASH;
 }
 void writeSramImpl(uint8_t* sram) {
-  store_save(SAVE_SRAM_EXTFLASH, sram, 8192);
+  store_save(SAVE_SRAM_EXTFLASH, sram, 2048);
 }
 
 
@@ -979,10 +984,18 @@ void app_main(void)
         /*if ((g_turbo ^ (is_replay & g_replay_turbo)) && (frameCtr & (g_turbo ? 0xf : 0x7f)) != 0) {
         continue;
         }*/
-        
-//        RtlRenderAudio(audiobuffer, AUDIO_BUFFER_LENGTH, 1);
 
-//        if (drawFrame) {
+        #if LIMIT_30FPS != 0
+        // Render audio to DMA buffer
+        //RtlRenderAudio(audiobuffer, AUDIO_BUFFER_LENGTH / 2, 1);
+        // FIXME Render two frames worth of gameplay / audio for each screen render
+        RtlRunFrame(inputs);
+        //RtlRenderAudio(audiobuffer + (AUDIO_BUFFER_LENGTH / 2), AUDIO_BUFFER_LENGTH / 2, 1);
+        #else
+        //RtlRenderAudio(audiobuffer, AUDIO_BUFFER_LENGTH, 1);
+        #endif /* LIMIT_30FPS*/
+
+        if (drawFrame) {
         
 //          pcm_submit();
           //ZeldaDiscardUnusedAudioFrames();
@@ -1002,7 +1015,7 @@ void app_main(void)
           renderedFrameCtr++;
           DrawPpuFrameWithPerf();
           prevTime = HAL_GetTick() - prevFrameTick;
- //       }
+        }
 
         // FIXME if no frame skip
         //if (prevTime < 17) {
