@@ -807,7 +807,7 @@ void app_main(void)
     int pitch = 320 * 2; // FIXME WIDTH * BPP; // FIXME 0;
     PpuBeginDrawing(g_my_ppu, pixel_buffer, pitch, g_ppu_render_flags);
     
-    // FIXME RtlReadSram();
+    RtlReadSram();
 
     bool running = true;
     //uint32 lastTick = HAL_GetTick();
