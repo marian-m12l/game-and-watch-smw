@@ -822,12 +822,10 @@ void app_main(void)
 
     common_emu_state.frame_time_10us = (uint16_t)(100000 / FRAMERATE + 0.5f);
 
-//    settings_init();
+    settings_init();
     
-//    uint8_t brightness = settings_Backlight_get();
-//    lcd_backlight_set(backlightLevels[brightness]);
-
-    lcd_backlight_set(backlightLevels[6]);  // FIXME
+    uint8_t brightness = settings_Backlight_get();
+    lcd_backlight_set(backlightLevels[brightness]);
 
     uint32_t prev_buttons = 0;
     uint32_t prev_power_ms = 0;
@@ -856,8 +854,11 @@ void app_main(void)
         // Handle power off / deep sleep
         if (buttons & B_POWER) {
           #if ENABLE_SAVESTATE != 0
-            // Auto save state on power off
-            HandleCommand(kKeys_Save, true);
+            // Disable auto-save-on-power-off if PAUSE/SET is pressed
+            if (!(buttons & B_PAUSE)) {
+              // Auto save state on power off
+              HandleCommand(kKeys_Save, true);
+            }
             GW_EnterDeepSleep();
           #else
             if(prompting_to_save){
@@ -869,11 +870,6 @@ void app_main(void)
             else{
               prev_power_ms = HAL_GetTick();
               prompting_to_save = true;
-              #if GNW_TARGET_ZELDA != 0
-                buttons |= B_TIME;  // Simulate pressing SELECT
-              #else 
-                buttons |= B_GAME | B_TIME;  // Simulate pressing SELECT
-              #endif
             }
           #endif
         }
@@ -890,25 +886,24 @@ void app_main(void)
         HandleCommand(3, !(buttons & B_GAME) && (buttons & B_Left));
         HandleCommand(4, !(buttons & B_GAME) && (buttons & B_Right));
 
-        HandleCommand(7, !(buttons & B_GAME) && (buttons & B_A));  // A (Pegasus Boots/Interacting)
-        HandleCommand(8, !(buttons & B_GAME) && (buttons & B_B));  // B (Sword)
+        HandleCommand(8, !(buttons & B_GAME) && (buttons & B_A));  // B (Regular Jump)
+        HandleCommand(9, !(buttons & B_GAME) && (buttons & B_B));  // X (Dash/Shoot)
+        HandleCommand(10, !(buttons & B_GAME) && (buttons & B_B)); // Y (Dash/Shoot)
 
         #if GNW_TARGET_ZELDA != 0
-            HandleCommand(9, (buttons & B_PAUSE));    // X (Show Map)
-            HandleCommand(10, !(buttons & B_GAME) && (buttons & B_SELECT));  // Y (Use Item)
+            HandleCommand(7, !(buttons & B_GAME) && (buttons & B_START));   // A (Spin Jump)
             
-            HandleCommand(5, (buttons & B_TIME));   // Select (Save Screen)
-            HandleCommand(6, !(buttons & B_GAME) && (buttons & B_START));  // Start (Item Selection Screen)
+            HandleCommand(5, !(buttons & B_GAME) && (buttons & B_SELECT));  // Select (Use reserve item)
+            HandleCommand(6, !(buttons & B_GAME) && (buttons & B_PAUSE));   // Start
             
-            // L & R aren't used in Zelda3, but we could enable item quick-swapping.
-            HandleCommand(11, (buttons & B_GAME) && (buttons & B_SELECT)); // L
-            HandleCommand(12, (buttons & B_GAME) && (buttons & B_START)); // R
+            // L & R are used in to scroll screen
+            HandleCommand(11, (buttons & B_GAME) && (buttons & B_SELECT));  // L
+            HandleCommand(12, (buttons & B_GAME) && (buttons & B_START));   // R
         #else 
-            HandleCommand(9, !(buttons & B_GAME) && (buttons & B_TIME));    // X
-            HandleCommand(10, !(buttons & B_GAME) && (buttons & B_PAUSE));  // Y
+            HandleCommand(7, !(buttons & B_GAME) && (buttons & B_PAUSE));   // A (Spin Jump)
             
-            HandleCommand(5, (buttons & B_GAME) && (buttons & B_TIME));   // Select
-            HandleCommand(6, (buttons & B_GAME) && (buttons & B_PAUSE));  // Start
+            HandleCommand(5, !(buttons & B_GAME) && (buttons & B_TIME));    // Select (Use reserve item)
+            HandleCommand(6, (buttons & B_GAME) && (buttons & B_PAUSE));    // Start
 
             // No button combinations available for L/R on Mario units...
             //HandleCommand(11, (buttons & B_GAME) && (buttons & B_B)); // L
@@ -987,17 +982,17 @@ void app_main(void)
 
         #if LIMIT_30FPS != 0
         // Render audio to DMA buffer
-        //RtlRenderAudio(audiobuffer, AUDIO_BUFFER_LENGTH / 2, 1);
+        RtlRenderAudio(audiobuffer, AUDIO_BUFFER_LENGTH / 2, 1);
         // FIXME Render two frames worth of gameplay / audio for each screen render
         RtlRunFrame(inputs);
-        //RtlRenderAudio(audiobuffer + (AUDIO_BUFFER_LENGTH / 2), AUDIO_BUFFER_LENGTH / 2, 1);
+        RtlRenderAudio(audiobuffer + (AUDIO_BUFFER_LENGTH / 2), AUDIO_BUFFER_LENGTH / 2, 1);
         #else
-        //RtlRenderAudio(audiobuffer, AUDIO_BUFFER_LENGTH, 1);
+        RtlRenderAudio(audiobuffer, AUDIO_BUFFER_LENGTH, 1);
         #endif /* LIMIT_30FPS*/
 
         if (drawFrame) {
         
-//          pcm_submit();
+          pcm_submit();
           //ZeldaDiscardUnusedAudioFrames();
 
           // TODO Cap framerate to 60fps
