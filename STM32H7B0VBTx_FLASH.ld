@@ -142,6 +142,8 @@ SECTIONS
     build/dsp.o (.text .text*)
     build/ppu.o (.text .text*)
     build/smw_rtl.o (.text .text*)
+    build/smw_05.o (.text .text*)
+    build/smw_0c.o (.text .text*)
 
     . = ALIGN(4);
     __itcram_hot_end__ = .;
@@ -164,6 +166,8 @@ SECTIONS
     build/dsp.o (.rodata .rodata*)
     build/ppu.o (.rodata .rodata*)
     build/smw_rtl.o (.rodata .rodata*)
+    build/smw_05.o (.rodata .rodata*)
+    build/smw_0c.o (.rodata .rodata*)
 
     . = ALIGN(4);
     __dtcram_hot_end__ = .;
@@ -197,6 +201,9 @@ SECTIONS
     __ahbram_hot_start__ = .;
 
     build/smw_spc_player.o (.text .text* .rodata .rodata*)
+    build/smw_00.o (.text .text* .rodata .rodata*)
+    build/smw_03.o (.text .text* .rodata .rodata*)
+    build/smw_07.o (.text .text* .rodata .rodata*)
     
     . = ALIGN(4);
     __ahbram_hot_end__ = .;
@@ -212,6 +219,11 @@ SECTIONS
 
     . = ALIGN(4);
     __ram_exec_start__ = .;
+
+    build/smw_01.o (.text .text* .rodata .rodata*)
+    build/smw_02.o (.text .text* .rodata .rodata*)
+    build/smw_04.o (.text .text* .rodata .rodata*)
+    build/smw_0d.o (.text .text* .rodata .rodata*)
     
     build/smw_assets_in_ram.o (.text .text* .rodata .rodata*)
 
@@ -255,16 +267,6 @@ SECTIONS
   {
     . = ALIGN(4);
     _extflash = .;
-
-    build/smw_00.o (.text .text* .rodata .rodata*)
-    build/smw_01.o (.text .text* .rodata .rodata*)
-    build/smw_02.o (.text .text* .rodata .rodata*)
-    build/smw_03.o (.text .text* .rodata .rodata*)
-    build/smw_04.o (.text .text* .rodata .rodata*)
-    build/smw_05.o (.text .text* .rodata .rodata*)
-    build/smw_07.o (.text .text* .rodata .rodata*)
-    build/smw_0c.o (.text .text* .rodata .rodata*)
-    build/smw_0d.o (.text .text* .rodata .rodata*)
 
     build/smw_assets_in_extflash.o (.text .text* .rodata .rodata*)
 
