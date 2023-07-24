@@ -7,3 +7,5 @@ scripts/smw_assets*.dat
 *.sav
 .gdbinit
 *.DS_Store
+venv/
+.venv/
