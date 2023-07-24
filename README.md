@@ -14,7 +14,7 @@ git clone --recurse-submodules https://github.com/marian-m12l/game-and-watch-smw
 pip3 install -r requirements.txt
 ```
 
-- Place your US ROM file named `smw.sfc` in `smw/`.
+- Place your US ROM file named `smw.sfc` in `smw/assets/`.
 
 - Compile and flash (e.g. on internal flash bank 2, leaving 1MB (out of 16) for stock firmware at the beginning of extflash)
 ```sh
