@@ -59,12 +59,11 @@ assets_location = [
         #(55,    'ram'),          # Level Name Strings            (460 B)
         (56,    'ram'),          # Show Enemy Roll Call Tile     (1681 B)
         #(57,    'ram')          # Whole ROM file                (524288 B)
-        
-        # FIXME asset 57 is the whole rom file (512KB) --> no need to package it!
+        # Asset 57 is not packaged since it contains the whole rom file and is not used
 ]
 assets_in_intflash = [index for (index, location) in assets_location if location == 'intflash']
 assets_in_ram = [index for (index, location) in assets_location if location == 'ram']
-assets_in_extflash = [index for index in range(58) if index not in assets_in_intflash and index not in assets_in_ram]
+assets_in_extflash = [index for index in range(57) if index not in assets_in_intflash and index not in assets_in_ram]
 
 
 def bundle_assets(assets_to_keep, path):

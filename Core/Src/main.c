@@ -529,7 +529,8 @@ static void LoadAssets() {
   LoadAssetsChunk(smw_ram_assets_length, smw_ram_assets);
 
   // Make sure all assets were loaded
-  for (size_t i = 0; i < kNumberOfAssets; i++) {
+  // Asset 57 is not packaged since it contains the whole rom file and is not used
+  for (size_t i = 0; i < kNumberOfAssets - 1; i++) {
     if (g_asset_ptrs[i] == 0) {
       Die("Missing asset");
     }
