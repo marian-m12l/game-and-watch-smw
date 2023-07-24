@@ -19,7 +19,7 @@ fi
 
 address=$(get_symbol __SAVEFLASH_START__)
 address=$(($address + 4096))
-size=$((4096*68))   # FIXME savestate size?
+size=$((4096*66))   # FIXME savestate size?
 echo ""
 echo ""
 echo "Dumping savestate data:"

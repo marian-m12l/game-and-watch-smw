@@ -347,8 +347,8 @@ struct SpcPlayer *g_spc_player;
 
 
 #if ENABLE_SAVESTATE != 0
-// Needs to hold 275465 bytes --> 4KB * 68 = 278528
-uint8_t SAVESTATE_EXTFLASH[4096 * 68]  __attribute__((section (".saveflash"))) __attribute__((aligned(4096)));
+// Needs to hold 268708 bytes --> 4KB * 66 = 270336
+uint8_t SAVESTATE_EXTFLASH[4096 * 66]  __attribute__((section (".saveflash"))) __attribute__((aligned(4096)));
 uint8_t savestateBuffer[4096] __attribute__((section (".savestate_buffer")));
 #endif
 
