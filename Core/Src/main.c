@@ -329,6 +329,7 @@ bool g_new_ppu = true;
 bool g_other_image = true;
 bool g_debug_flag = false;
 int g_got_mismatch_count;
+uint32 g_wanted_features;
 
 static uint32 frameCtr = 0;
 static uint32 renderedFrameCtr = 0;
@@ -792,7 +793,7 @@ void app_main(void)
 
     // FIXME g_zenv.ppu->extraLeftRight = 0;
     
-    //g_wanted_zelda_features = FEATURES;
+    g_wanted_features = FEATURES;
 
     // FIXME ZeldaEnableMsu(false);
     // FIXME ZeldaSetLanguage(STRINGIZE_VALUE_OF(DIALOGUES_LANGUAGE));

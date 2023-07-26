@@ -61,6 +61,14 @@ RENDER_FPS ?= 0
 ENABLE_SAVESTATE ?= 0
 
 
+# Save to SRAM after each beaten level (instead of saving after castle is beaten).
+# SRAM save remains valid/compatible with emulators.
+FEATURE_SAVE_AFTER_EACH_BEATEN_LEVEL ?= 0
+
+FEATURES := 0
+FEATURES := $(shell echo "$$(( $(FEATURES) | $(FEATURE_SAVE_AFTER_EACH_BEATEN_LEVEL) << 0 ))")
+
+
 # Configure Game & Watch target device mario|zelda
 GNW_TARGET ?= mario
 
@@ -283,7 +291,8 @@ C_DEFS =  \
 -DLIMIT_30FPS=$(LIMIT_30FPS) \
 -DOVERCLOCK=$(OVERCLOCK) \
 -DRENDER_FPS=$(RENDER_FPS) \
--DENABLE_SAVESTATE=$(ENABLE_SAVESTATE)
+-DENABLE_SAVESTATE=$(ENABLE_SAVESTATE) \
+-DFEATURES=$(FEATURES)
 
 
 # AS includes
