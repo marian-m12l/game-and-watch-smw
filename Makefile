@@ -452,6 +452,17 @@ flash_intflash: $(BUILD_DIR)/$(TARGET)_intflash.bin
 	$(OPENOCD) -f $(OCDIFACE) -c "program $< $(INTFLASH_ADDRESS) $(PROGRAM_VERIFY) reset exit"
 .PHONY: flash_intflash
 
+flash_ram: $(BUILD_DIR)/$(TARGET)_intflash.bin
+	$(OPENOCD) -f $(OCDIFACE) -c "init; reset halt; load_image $< 0x24000000;" \
+		-c 'set MSP 0x[string range [mdw 0x24000000] 12 19]' \
+		-c 'set PC 0x[string range [mdw 0x24000004] 12 19]' \
+		-c 'echo "Setting MSP -> $$MSP"' \
+		-c 'echo "Setting PC -> $$PC"' \
+		-c 'reg msp $$MSP' \
+		-c 'reg pc $$PC' \
+		-c 'resume;exit'
+.PHONY: flash_intflash
+
 flash_extflash: $(BUILD_DIR)/$(TARGET)_extflash.bin
 	$(OPENOCD) -f $(OCDIFACE) -c "program $< $(EXTFLASH_ADDRESS) $(PROGRAM_VERIFY) reset exit"
 .PHONY: flash_extflash
@@ -459,9 +470,10 @@ flash_extflash: $(BUILD_DIR)/$(TARGET)_extflash.bin
 # Programs both the external and internal flash.
 flash:
 	$(V)$(MAKE) flash_extflash
-	$(V)$(MAKE) flash_intflash
+	$(V)$(MAKE) flash_ram
+#	$(V)$(MAKE) flash_intflash
 #	$(V)$(RESET_DBGMCU_CMD)
-	$(V)$(MAKE) reset_dbgmcu 
+#	$(V)$(MAKE) reset_dbgmcu 
 .PHONY: flash
 
 
