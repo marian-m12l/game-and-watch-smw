@@ -41,6 +41,21 @@ To control game options:
 | `RENDER_FPS` | Render performance metrics. Disabled by default. |
 | `ENABLE_SAVESTATE` | Enable savestate support. This allocates 178kB of external flash.<br>Disabled by default. |
 
+## (WIP) Building as a Retro-Go application (a.k.a. running in RAM)
+
+**DISCLAIMER: This is work-in-progress**
+
+SMW can be run without flashing to intflash. The "intflash" binary can be stored in the Retro-Go filesystem and loaded into RAM for execution.
+
+The Retro-Go filesystem must be large enough to fit the "intflash" binary on top of emulator savestates.
+
+```
+make [...] flash_extflash
+make [...] build/gw_smw_intflash.bin
+tamp compress build/gw_smw_intflash.bin -o build/gw_smw_intflash.bin.tamp
+python3 gnwmanager.py push /apps/smw.bin.tamp build/gw_smw_intflash.bin.tamp
+```
+
 # Backing up and restoring saves
 
 ```sh
