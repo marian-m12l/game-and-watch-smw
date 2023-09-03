@@ -65,9 +65,8 @@ __NULLPTR_LENGTH__  = 0x100;
 __ITCMRAM_LENGTH__  = 64K;
 __DTCMRAM_LENGTH__  = 128K;
 __RAM_LENGTH__   = 1024K;
-__RAM_UC_LENGTH__   = 300K;
-__RAM_CORE_LENGTH__ = 68K;
-__RAM_EMU_LENGTH__  = __RAM_LENGTH__ - __RAM_UC_LENGTH__ - __RAM_CORE_LENGTH__;
+__RAM_UC_LENGTH__   = 0K;   /* FIXME 300K */
+__RAM_CORE_LENGTH__  = __RAM_LENGTH__ - __RAM_UC_LENGTH__;
 __AHBRAM_LENGTH__   = 128K;
 __FLASH_LENGTH__    = 256K; /* Both banks are 256KB */
 
@@ -100,12 +99,12 @@ __FBFLASH_END__   = __FBFLASH_START__ + __FBFLASH_LENGTH__;
 __RAM_START__       = 0x24000000;
 __RAM_UC_START__    = __RAM_START__;
 __RAM_CORE_START__  = __RAM_START__ + __RAM_UC_LENGTH__;
-__RAM_EMU_START__   = __RAM_CORE_START__ + __RAM_CORE_LENGTH__;
-
-__RAM_EMU_END__     = __RAM_EMU_START__ + __RAM_EMU_LENGTH__;
+__RAM_END__     = __RAM_CORE_START__ + __RAM_CORE_LENGTH__;
 
 
 
+/* TODO RAM application loaded in RAM_UC (300K) */
+/* TODO intflash bootloader loads RAM application */
 
 
 /* Specify the memory areas */
@@ -113,7 +112,8 @@ MEMORY
 {
   ITCMRAM  (xrw) : ORIGIN = 0x00000000, LENGTH = 64K
   DTCMRAM  (xrw) : ORIGIN = 0x20000000, LENGTH = 128K
-  RAM      (xrw) : ORIGIN = 0x24000000, LENGTH = 1024K
+  RAM_UC   (xrw) : ORIGIN = __RAM_UC_START__, LENGTH = __RAM_UC_LENGTH__
+  RAM_CORE (xrw) : ORIGIN = __RAM_CORE_START__, LENGTH = __RAM_CORE_LENGTH__
   AHBRAM   (xrw) : ORIGIN = 0x30000000, LENGTH = 128K
 
   /* + 32KB of AHB RAM IN SRD DOMAIN @ 0x38000000 ? */
@@ -129,8 +129,28 @@ MEMORY
 /* Define output sections */
 SECTIONS
 {
-  _sitcram_hot = LOADADDR(._itcram_hot);
+
+  /* TODO List of RAM payload sections */
+  /* TODO List of intflash sections */
+  /* TODO List of extflash sections */
+
+  /* TODO Size of intflash sections */
+  /* TODO Size of extflash sections */
+
+
+
+  /*********************************************/
+  /****************** EXTFLASH *****************/
+  /*********************************************/
+
+
+  /* TODO move to end of script ??? */
   __extflash_start__ = LOADADDR(._itcram_hot);
+
+
+  /***** Loaded from EXTFLASH into ITCMRAM *****/
+
+  _sitcram_hot = LOADADDR(._itcram_hot);
   ._itcram_hot :
   {
     __itcram_start__ = .;
@@ -150,10 +170,10 @@ SECTIONS
 
     __itcram_end__ = .;
   } >ITCMRAM AT> EXTFLASH
-  
 
- 
-  /* Copied from flash to ram at boot */
+
+  /***** Loaded from EXTFLASH into DTCMRAM *****/
+  
   _sdtcram_hot = LOADADDR(._dtcram_hot);
   ._dtcram_hot :
   {
@@ -173,32 +193,10 @@ SECTIONS
     __dtcram_hot_end__ = .;
 
   } >DTCMRAM AT> EXTFLASH
+
+
+  /****** Loaded from EXTFLASH into AHBRAM *****/
   
-
-  ._persistent (NOLOAD) :
-  {
-    . = ALIGN(8);
-    *(.persistent)
-    . = ALIGN(8);
-  } >DTCMRAM
-
-  . = ALIGN(4);
-  ._spc_player_bss :
-  {
-    . = ALIGN(4);
-    __dtcram_bss_start__ = .;
-
-    build/smw_spc_player.o (.bss .bss*)
-    *(.savestate_buffer)              /* DTCMRAM would probably be better used for something else */
-    
-    . = ALIGN(4);
-    __dtcram_bss_end__ = .;
-
-  } >DTCMRAM
-
-  
-
-  /* Copied from flash to ram at boot */
   _sahbram_hot = LOADADDR(._ahbram_hot);
   ._ahbram_hot :
   {
@@ -219,6 +217,8 @@ SECTIONS
   } >AHBRAM AT> EXTFLASH
 
 
+  /******* Loaded from EXTFLASH into RAM *******/
+
   _siramdata = LOADADDR(._ram_exec);
   ._ram_exec :
   {
@@ -237,38 +237,10 @@ SECTIONS
     . = ALIGN(4);
     __ram_exec_end__ = .;
     
-  } >RAM AT> EXTFLASH
+  } >RAM_CORE AT> EXTFLASH
 
 
-  /* Uninitialized data section */
-  . = ALIGN(4);
-  .bss :
-  {
-    /* This is used by the startup in order to initialize the .bss secion */
-    _sbss = .;         /* define a global symbol at bss start */
-    __bss_start__ = _sbss;
-    *(.bss)
-    *(.bss*)
-    *(COMMON)
-
-    . = ALIGN(4);
-    _ebss = .;         /* define a global symbol at bss end */
-    __bss_end__ = _ebss;
-  } >RAM
-
-
-  /* User_heap_stack section, used to check that there is enough RAM left */
-  ._user_heap_stack :
-  {
-    . = ALIGN(8);
-    PROVIDE ( end = . );
-    PROVIDE ( _end = . );
-    . = . + _Min_Heap_Size;
-    . = . + _Min_Stack_Size;
-    . = ALIGN(8);
-    __ram_end__ = .;
-  } >RAM
-
+  /************* Stored in EXTFLASH ************/
 
   ._extflash :
   {
@@ -280,8 +252,12 @@ SECTIONS
     __extflash_end__ = .;
   } >EXTFLASH
 
+  /* FIXME extflash sections ??? */
+  /* FIXME move to end of script ??? */
   __extflash_end__ = __extflash_start__ + SIZEOF(._itcram_hot) + SIZEOF(._dtcram_hot) + SIZEOF(._ahbram_hot) + SIZEOF(._ram_exec) + SIZEOF(._extflash);
 
+
+  /* TODO Should be counted in extflash size ??? */
 
   ._saveflash (NOLOAD) :
   {
@@ -306,9 +282,83 @@ SECTIONS
     __fbflash_end__ = .;
   } > FBFLASH
 
+
+  /*********************************************/
+  /********************* RAM *******************/
+  /*********************************************/
+
+
+  /********* Reserved area in DTCMRAM **********/
+
+  ._persistent (NOLOAD) :
+  {
+    . = ALIGN(8);
+    *(.persistent)
+    . = ALIGN(8);
+  } >DTCMRAM
+
+
+  /***** Uninitialized variables in DTCMRAM ****/
+
+  . = ALIGN(4);
+  ._spc_player_bss :
+  {
+    . = ALIGN(4);
+    __dtcram_bss_start__ = .;
+
+    build/smw_spc_player.o (.bss .bss*)
+    *(.savestate_buffer)
+    
+    . = ALIGN(4);
+    __dtcram_bss_end__ = .;
+
+  } >DTCMRAM
+
+
+  /******* Uninitialized variables in RAM ******/
   
-  /* The startup code goes first into FLASH */
-    __flash_start__ = LOADADDR(.isr_vector);
+  . = ALIGN(4);
+  .bss :
+  {
+    /* This is used by the startup in order to initialize the .bss secion */
+    _sbss = .;         /* define a global symbol at bss start */
+    __bss_start__ = _sbss;
+    *(.bss)
+    *(.bss*)
+    *(COMMON)
+
+    . = ALIGN(4);
+    _ebss = .;         /* define a global symbol at bss end */
+    __bss_end__ = _ebss;
+  } >RAM_CORE
+
+
+  /* User_heap_stack section, used to check that there is enough RAM left */
+  ._user_heap_stack :
+  {
+    . = ALIGN(8);
+    PROVIDE ( end = . );
+    PROVIDE ( _end = . );
+    . = . + _Min_Heap_Size;
+    . = . + _Min_Stack_Size;
+    . = ALIGN(8);
+    __ram_end__ = .;
+  } >RAM_CORE
+
+
+
+  /*********************************************/
+  /****************** INTFLASH *****************/
+  /*********************************************/
+
+  /* FIXME only bootloader ??? + associated isr_vector */
+  
+  /* TODO move to end of script ??? */
+  __flash_start__ = LOADADDR(.isr_vector);
+
+
+  /***** ISR vector comes first in INTFLASH ****/
+  
   .isr_vector :
   {
 
@@ -319,7 +369,8 @@ SECTIONS
   } >FLASH
 
 
-  /* The rest of program code and other data goes into INTFLASH */
+  /* Rest of program code is stored in INTFLASH */
+
   .text :
   {
     . = ALIGN(4);
@@ -336,7 +387,9 @@ SECTIONS
     _etext = .;        /* define a global symbols at end of code */
   } >FLASH
 
-  /* Constant data goes into FLASH */
+
+  /**** Constant data is stored in INTFLASH ****/
+  
   .rodata :
   {
     . = ALIGN(4);
@@ -345,12 +398,22 @@ SECTIONS
     . = ALIGN(4);
   } >FLASH
 
-  .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) } >FLASH
+
+  /* Needed for exception handling / frame stacks */
+
+  .ARM.extab :
+  {
+    *(.ARM.extab* .gnu.linkonce.armextab.*)
+  } >FLASH
+  
   .ARM : {
     __exidx_start = .;
     *(.ARM.exidx*)
     __exidx_end = .;
   } >FLASH
+
+
+  /* Functions arrays for (pre-)initialization and termination */
 
   .preinit_array     :
   {
@@ -374,10 +437,9 @@ SECTIONS
   } >FLASH
 
 
-  /* used by the startup to initialize data */
-  _sidata = LOADADDR(.data);
+  /***** Loaded from INTFLASH into DTCMRAM *****/
 
-  /* Initialized data sections goes into RAM, load LMA copy after code */
+  _sidata = LOADADDR(.data);
   .data : 
   {
 
@@ -392,10 +454,14 @@ SECTIONS
     __dtcram_end__ = .;
   } >DTCMRAM AT> FLASH
 
+
+  /* FIXME intflash sections ??? */
+  /* FIXME move to end of script ??? */
   __flash_end__ = __flash_start__ + SIZEOF(.isr_vector) + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.ARM.extab) + SIZEOF(.ARM) + SIZEOF(.preinit_array) + SIZEOF(.init_array) + SIZEOF(.fini_array) + SIZEOF(.data);
   
 
   /* Remove information from the standard libraries */
+  
   /DISCARD/ :
   {
     libc.a ( * )
