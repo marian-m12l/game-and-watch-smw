@@ -64,9 +64,9 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 __NULLPTR_LENGTH__  = 0x100;
 __ITCMRAM_LENGTH__  = 64K;
 __DTCMRAM_LENGTH__  = 128K;
-__RAM_LENGTH__   = 1024K;
-__RAM_UC_LENGTH__   = 0K;   /* FIXME 300K */
-__RAM_CORE_LENGTH__  = __RAM_LENGTH__ - __RAM_UC_LENGTH__;
+__RAM_LENGTH__      = 1024K;
+__RAM_UC_LENGTH__   = 128K;
+__RAM_CORE_LENGTH__ = __RAM_LENGTH__ - __RAM_UC_LENGTH__;
 __AHBRAM_LENGTH__   = 128K;
 __FLASH_LENGTH__    = 256K; /* Both banks are 256KB */
 
@@ -144,10 +144,6 @@ SECTIONS
   /*********************************************/
 
 
-  /* TODO move to end of script ??? */
-  __extflash_start__ = LOADADDR(._itcram_hot);
-
-
   /***** Loaded from EXTFLASH into ITCMRAM *****/
 
   _sitcram_hot = LOADADDR(._itcram_hot);
@@ -223,6 +219,7 @@ SECTIONS
   ._ram_exec :
   {
     __ram_start__ = .;
+    __ram_core_start__ = .;
 
     . = ALIGN(4);
     __ram_exec_start__ = .;
@@ -251,10 +248,6 @@ SECTIONS
 
     __extflash_end__ = .;
   } >EXTFLASH
-
-  /* FIXME extflash sections ??? */
-  /* FIXME move to end of script ??? */
-  __extflash_end__ = __extflash_start__ + SIZEOF(._itcram_hot) + SIZEOF(._dtcram_hot) + SIZEOF(._ahbram_hot) + SIZEOF(._ram_exec) + SIZEOF(._extflash);
 
 
   /* TODO Should be counted in extflash size ??? */
@@ -342,9 +335,10 @@ SECTIONS
     . = . + _Min_Heap_Size;
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
+
+    __ram_core_end__ = .;
     __ram_end__ = .;
   } >RAM_CORE
-
 
 
   /*********************************************/
@@ -352,21 +346,81 @@ SECTIONS
   /*********************************************/
 
   /* FIXME only bootloader ??? + associated isr_vector */
-  
-  /* TODO move to end of script ??? */
-  __flash_start__ = LOADADDR(.isr_vector);
 
 
   /***** ISR vector comes first in INTFLASH ****/
   
-  .isr_vector :
+  .isr_vector_bootloader :
   {
 
     . = ALIGN(4);
-    KEEP(*(.isr_vector)) /* Startup code */
+    KEEP(build/startup_bootloader_stm32h7b0xx.o(.isr_vector_bootloader)) /* Startup code */
     . = ALIGN(4);
     
   } >FLASH
+
+
+  /***** TODO .text .data .rodata of bootloader ??? ****/
+  
+  .text.bootloader :
+  {
+
+    . = ALIGN(4);
+    build/startup_bootloader_stm32h7b0xx.o(.text)
+    build/startup_bootloader_stm32h7b0xx.o(.text*)
+    . = ALIGN(4);
+    
+  } >FLASH
+  
+  .text.bootloader :
+  {
+
+    . = ALIGN(4);
+    build/startup_bootloader_stm32h7b0xx.o(.text)
+    build/startup_bootloader_stm32h7b0xx.o(.text*)
+    . = ALIGN(4);
+    
+  } >FLASH
+  
+  .rodata.bootloader :
+  {
+
+    . = ALIGN(4);
+    build/startup_bootloader_stm32h7b0xx.o(.rodata)
+    build/startup_bootloader_stm32h7b0xx.o(.rodata*)
+    . = ALIGN(4);
+    
+  } >FLASH
+
+  /* FIXME bootloader assembly should copy to ram ??? */
+  
+  .data.bootloader :
+  {
+
+    . = ALIGN(4);
+    build/startup_bootloader_stm32h7b0xx.o(.data)
+    build/startup_bootloader_stm32h7b0xx.o(.data*)
+    . = ALIGN(4);
+    
+  } >FLASH
+
+
+  /*********************************************/
+  /*************** RAM APPLICATION *************/
+  /*********************************************/
+
+
+  /******* ISR vector comes first in RAM *******/
+  
+  .isr_vector_ram :
+  {
+    __ram_uc_start__ = .;
+
+    . = ALIGN(4);
+    KEEP(build/startup_stm32h7b0xx.o(.isr_vector)) /* Startup code */
+    . = ALIGN(4);
+    
+  } >RAM_UC
 
 
   /* Rest of program code is stored in INTFLASH */
@@ -385,7 +439,7 @@ SECTIONS
 
     . = ALIGN(4);
     _etext = .;        /* define a global symbols at end of code */
-  } >FLASH
+  } >RAM_UC
 
 
   /**** Constant data is stored in INTFLASH ****/
@@ -396,7 +450,7 @@ SECTIONS
     *(.rodata)         /* .rodata sections (constants, strings, etc.) */
     *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
     . = ALIGN(4);
-  } >FLASH
+  } >RAM_UC
 
 
   /* Needed for exception handling / frame stacks */
@@ -404,13 +458,13 @@ SECTIONS
   .ARM.extab :
   {
     *(.ARM.extab* .gnu.linkonce.armextab.*)
-  } >FLASH
+  } >RAM_UC
   
   .ARM : {
     __exidx_start = .;
     *(.ARM.exidx*)
     __exidx_end = .;
-  } >FLASH
+  } >RAM_UC
 
 
   /* Functions arrays for (pre-)initialization and termination */
@@ -420,24 +474,27 @@ SECTIONS
     PROVIDE_HIDDEN (__preinit_array_start = .);
     KEEP (*(.preinit_array*))
     PROVIDE_HIDDEN (__preinit_array_end = .);
-  } >FLASH
+  } >RAM_UC
   .init_array :
   {
     PROVIDE_HIDDEN (__init_array_start = .);
     KEEP (*(SORT(.init_array.*)))
     KEEP (*(.init_array*))
     PROVIDE_HIDDEN (__init_array_end = .);
-  } >FLASH
+  } >RAM_UC
   .fini_array :
   {
     PROVIDE_HIDDEN (__fini_array_start = .);
     KEEP (*(SORT(.fini_array.*)))
     KEEP (*(.fini_array*))
     PROVIDE_HIDDEN (__fini_array_end = .);
-  } >FLASH
+    
+    __ram_uc_end__ = .;
+  } >RAM_UC
 
 
-  /***** Loaded from INTFLASH into DTCMRAM *****/
+  /* FIXME just keep it in RAM ??? --> move other stuff to DTCMRAM ??? */
+  /******* Loaded from RAM into DTCMRAM *******/
 
   _sidata = LOADADDR(.data);
   .data : 
@@ -452,12 +509,7 @@ SECTIONS
     _edata = .;        /* define a global symbol at data end */
     
     __dtcram_end__ = .;
-  } >DTCMRAM AT> FLASH
-
-
-  /* FIXME intflash sections ??? */
-  /* FIXME move to end of script ??? */
-  __flash_end__ = __flash_start__ + SIZEOF(.isr_vector) + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.ARM.extab) + SIZEOF(.ARM) + SIZEOF(.preinit_array) + SIZEOF(.init_array) + SIZEOF(.fini_array) + SIZEOF(.data);
+  } >DTCMRAM AT> RAM_UC
   
 
   /* Remove information from the standard libraries */
@@ -470,6 +522,23 @@ SECTIONS
   }
 
   .ARM.attributes 0 : { *(.ARM.attributes) }
+
+
+  /*********************************************/
+  /****************** SYMBOLS ******************/
+  /*********************************************/
+
+  /* FIXME move all start/end symbols here */
+  
+  __ramapp_start__ = LOADADDR(.isr_vector_ram);
+  __ramapp_end__ = __ramapp_start__ + SIZEOF(.isr_vector_ram) + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.ARM.extab) + SIZEOF(.ARM) + SIZEOF(.preinit_array) + SIZEOF(.init_array) + SIZEOF(.fini_array) + SIZEOF(.data);
+
+  __extflash_start__ = LOADADDR(._itcram_hot);
+  __extflash_end__ = __extflash_start__ + SIZEOF(._itcram_hot) + SIZEOF(._dtcram_hot) + SIZEOF(._ahbram_hot) + SIZEOF(._ram_exec) + SIZEOF(._extflash);
+  
+  __flash_start__ = LOADADDR(.isr_vector_bootloader);
+  __flash_end__ = __flash_start__ + SIZEOF(.isr_vector_bootloader) + SIZEOF(.text.bootloader) + SIZEOF(.rodata.bootloader) + SIZEOF(.data.bootloader);
+
 }
 
 
