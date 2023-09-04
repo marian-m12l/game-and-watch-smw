@@ -103,9 +103,6 @@ __RAM_END__     = __RAM_CORE_START__ + __RAM_CORE_LENGTH__;
 
 
 
-/* TODO RAM application loaded in RAM_UC (300K) */
-/* TODO intflash bootloader loads RAM application */
-
 
 /* Specify the memory areas */
 MEMORY
@@ -115,9 +112,6 @@ MEMORY
   RAM_UC   (xrw) : ORIGIN = __RAM_UC_START__, LENGTH = __RAM_UC_LENGTH__
   RAM_CORE (xrw) : ORIGIN = __RAM_CORE_START__, LENGTH = __RAM_CORE_LENGTH__
   AHBRAM   (xrw) : ORIGIN = 0x30000000, LENGTH = 128K
-
-  /* + 32KB of AHB RAM IN SRD DOMAIN @ 0x38000000 ? */
-  /* + 4KB of Backup RAM @ 0x38800000 ? */
 
   FLASH    (xr ) : ORIGIN = __INTFLASH__,  LENGTH = __FLASH_LENGTH__
   EXTFLASH (xr ) : ORIGIN = __EXTFLASH_START__,  LENGTH = __EXTFLASH_LENGTH__
@@ -129,13 +123,6 @@ MEMORY
 /* Define output sections */
 SECTIONS
 {
-
-  /* TODO List of RAM payload sections */
-  /* TODO List of intflash sections */
-  /* TODO List of extflash sections */
-
-  /* TODO Size of intflash sections */
-  /* TODO Size of extflash sections */
 
 
 
@@ -360,7 +347,7 @@ SECTIONS
   } >FLASH
 
 
-  /***** TODO .text .data .rodata of bootloader ??? ****/
+  /***** Bootloader code stored in INTFLASH ****/
   
   .text.bootloader :
   {
@@ -371,16 +358,9 @@ SECTIONS
     . = ALIGN(4);
     
   } >FLASH
-  
-  .text.bootloader :
-  {
 
-    . = ALIGN(4);
-    build/startup_bootloader_stm32h7b0xx.o(.text)
-    build/startup_bootloader_stm32h7b0xx.o(.text*)
-    . = ALIGN(4);
-    
-  } >FLASH
+
+  /** Bootloader constants stored in INTFLASH **/
   
   .rodata.bootloader :
   {
@@ -392,7 +372,8 @@ SECTIONS
     
   } >FLASH
 
-  /* FIXME bootloader assembly should copy to ram ??? */
+
+  /***** Bootloader data stored in INTFLASH ****/
   
   .data.bootloader :
   {
@@ -400,6 +381,21 @@ SECTIONS
     . = ALIGN(4);
     build/startup_bootloader_stm32h7b0xx.o(.data)
     build/startup_bootloader_stm32h7b0xx.o(.data*)
+    . = ALIGN(4);
+    
+  } >FLASH
+
+
+  /* Reserved area in INTFLASH for RAM application payload */
+  
+  .payload.bootloader :
+  {
+
+    . = ALIGN(4);
+    __payload_start__ = .;
+    . += 0x20000;   /* TODO Compute size from ram_app.bin size ??? */
+    KEEP (*(.nope))
+    __payload_end__ = .;
     . = ALIGN(4);
     
   } >FLASH
@@ -537,7 +533,7 @@ SECTIONS
   __extflash_end__ = __extflash_start__ + SIZEOF(._itcram_hot) + SIZEOF(._dtcram_hot) + SIZEOF(._ahbram_hot) + SIZEOF(._ram_exec) + SIZEOF(._extflash);
   
   __flash_start__ = LOADADDR(.isr_vector_bootloader);
-  __flash_end__ = __flash_start__ + SIZEOF(.isr_vector_bootloader) + SIZEOF(.text.bootloader) + SIZEOF(.rodata.bootloader) + SIZEOF(.data.bootloader);
+  __flash_end__ = __flash_start__ + SIZEOF(.isr_vector_bootloader) + SIZEOF(.text.bootloader) + SIZEOF(.rodata.bootloader) + SIZEOF(.data.bootloader) + SIZEOF(.payload.bootloader);
 
 }
 
