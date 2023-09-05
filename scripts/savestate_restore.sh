@@ -20,7 +20,7 @@ fi
 # Note that 0x90000000 is subtracted from the address.
 address=$(get_symbol __SAVEFLASH_START__)
 address=$(($address + 4096))
-size=$((4096*66))   # FIXME savestate size?
+size=$((4096*66))
 image="${INFILE}"
 
 if [[ -e "$image" ]]; then

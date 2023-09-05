@@ -24,15 +24,14 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stm32h7xx_hal.h"
-#include "buttons.h"  // FIXME replace with gw_buttons ???
-#include "lcd.h"      // FIXME replace with gw_lcd ??? handle dual framebuffer ???
+#include "buttons.h"
+#include "lcd.h"
 #include "bq24072.h"
 
 #include "gw_flash.h"
 
 #include "gw_linker.h"
 
-// FIXME ??? #include "porting.h"
 #include "smw_assets_in_intflash.h"
 #include "smw_assets_in_ram.h"
 #include "smw_assets_in_extflash.h"
@@ -250,8 +249,6 @@ __attribute__((optimize("-O0"))) void BSOD(BSOD_t fault, uint32_t pc, uint32_t l
 }
 
 
-// TODO Handle power off / deep sleep
-
 void GW_EnterDeepSleep(void)
 {
   // Stop SAI DMA (audio)
@@ -343,7 +340,7 @@ struct SpcPlayer *g_spc_player;
 #else
 #define FRAMERATE 60
 #endif /* LIMIT_30FPS */
-#define AUDIO_BUFFER_LENGTH 534 // (AUDIO_SAMPLE_RATE / FRAMERATE)  // SNES is 60 fps FIXME limited to 30 fps
+#define AUDIO_BUFFER_LENGTH 534 // (AUDIO_SAMPLE_RATE / FRAMERATE)  // When limited to 30 fps, audio is generated for two frames at once
 #define AUDIO_BUFFER_LENGTH_DMA (2 * AUDIO_BUFFER_LENGTH) // ((2 * AUDIO_SAMPLE_RATE) / FRAMERATE)  // DMA buffer contains 2 frames worth of audio samples in a ring buffer
 
 
@@ -544,22 +541,14 @@ MemBlk FindInAssetArray(int asset, int idx) {
 }
 
 
-// FIXME What renders to g_my_pixels and g_pixels ???
 void RtlDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
-  // TODO SmwDrawPpuFrame();
   g_rtl_game_info->draw_ppu_frame();
-
-  // TODO PPU should draw directly to pixel_buffer (i.e. framebuffer) ?
-  /*uint8 *ppu_pixels = g_my_pixels;// g_other_image ? g_my_pixels : g_pixels;
-  for (size_t y = 0, y_end = g_snes_height; y < y_end; y++)
-    memcpy((uint8 *)pixel_buffer + y * pitch, ppu_pixels + y * 256 * 4, 256 * 4);*/
 }
 
 static void DrawPpuFrameWithPerf() {
-  /*int render_scale = PpuGetCurrentRenderScale(g_zenv.ppu, g_ppu_render_flags);*/
   wdog_refresh();
   uint8 *pixel_buffer = framebuffer + 320*8 + 32;    // Start 8 rows from the top, 32 pixels from left
-  int pitch = 320 * 2; // FIXME WIDTH * BPP; // FIXME 0;
+  int pitch = 320 * 2;
 
   static runtime_stats_t stats;
   static bool statsInit = false;
@@ -622,7 +611,7 @@ static void DrawPpuFrameWithPerf() {
   // Render frame counter with dots
   /*memset(&framebuffer[235*320], 0, sizeof(uint16_t)*320*5);
   for (uint16_t x = 1; x<=(renderedFrameCtr%(160*5)); x++) {
-    framebuffer[235*320+x*2] = 0x07e0;  // FIXME WIDTH
+    framebuffer[235*320+x*2] = 0x07e0;
   }*/
 
   // Render overclocking level with dots
@@ -789,24 +778,14 @@ void app_main(void)
     
     Snes *snes = SnesInit(NULL, 0);
     
-    // FIXME ZeldaInitialize();
-
-    // FIXME g_zenv.ppu->extraLeftRight = 0;
-    
     g_wanted_features = FEATURES;
-
-    // FIXME ZeldaEnableMsu(false);
-    // FIXME ZeldaSetLanguage(STRINGIZE_VALUE_OF(DIALOGUES_LANGUAGE));
     
 
     g_spc_player = SmwSpcPlayer_Create();
     g_spc_player->initialize(g_spc_player);
     
-    // FIXME ???
-    //PpuBeginDrawing(snes->snes_ppu, g_pixels, 256 * 4, 0);
-    //PpuBeginDrawing(g_my_ppu, g_my_pixels, 256 * 4, 0);
     uint8 *pixel_buffer = framebuffer + 320*8 + 32;    // Start 8 rows from the top, 32 pixels from left
-    int pitch = 320 * 2; // FIXME WIDTH * BPP; // FIXME 0;
+    int pitch = 320 * 2;
     PpuBeginDrawing(g_my_ppu, pixel_buffer, pitch, g_ppu_render_flags);
     
     RtlReadSram();
@@ -880,8 +859,6 @@ void app_main(void)
           prompting_to_save = false;
         }
 
-
-        // FIXME Button bindings ???
 
         HandleCommand(1, !(buttons & B_GAME) && (buttons & B_Up));
         HandleCommand(2, !(buttons & B_GAME) && (buttons & B_Down));
@@ -985,7 +962,7 @@ void app_main(void)
         #if LIMIT_30FPS != 0
         // Render audio to DMA buffer
         RtlRenderAudio(audiobuffer, AUDIO_BUFFER_LENGTH / 2, 1);
-        // FIXME Render two frames worth of gameplay / audio for each screen render
+        // Render two frames worth of gameplay / audio for each screen render
         RtlRunFrame(inputs);
         RtlRenderAudio(audiobuffer + (AUDIO_BUFFER_LENGTH / 2), AUDIO_BUFFER_LENGTH / 2, 1);
         #else
@@ -995,18 +972,6 @@ void app_main(void)
         if (drawFrame) {
         
           pcm_submit();
-          //ZeldaDiscardUnusedAudioFrames();
-
-          // TODO Cap framerate to 60fps
-
-          // TODO Render two frames + display only one to achieve consistent 30fps ???
-
-          // Skip frames
-          //thisFrameTick = HAL_GetTick();
-          /*if (prevTime > 34) {
-            prevTime -= 17;
-            continue;
-          }*/
 
           prevFrameTick = HAL_GetTick();
           renderedFrameCtr++;
@@ -1014,23 +979,18 @@ void app_main(void)
           prevTime = HAL_GetTick() - prevFrameTick;
         }
 
-        // FIXME if no frame skip
-        //if (prevTime < 17) {
         if(!common_emu_state.skip_frames)
         {
             // odroid_audio_submit(pcm.buf, pcm.pos >> 1);
             // handled in pcm_submit instead.
             static dma_transfer_state_t last_dma_state = DMA_TRANSFER_STATE_HF;
-            // FIXME pause frame ???
             for(uint8_t p = 0; p < common_emu_state.pause_frames + 1; p++) {
-                // TODO only if audio data ???
                 while (dma_state == last_dma_state) {
                     cpumon_sleep();
                 }
                 last_dma_state = dma_state;
             }
         }
-        //}
         prev_buttons = buttons;
 
     }
@@ -1144,10 +1104,6 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  
-  // TODO Make sure QPSI is in memory-mapped mode to enable XIP at 0x90100000
-  // FIXME Done in OSPI_Init: OSPI_EnableMemoryMappedMode();
-  //flash_memory_map(&hospi1);
 
   // Sanity check, sometimes this is triggered
   uint32_t add = 0x90000000;
