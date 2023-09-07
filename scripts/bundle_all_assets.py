@@ -1,5 +1,7 @@
 import struct
 
+# FIXME assets list changed completely
+
 assets_location = [
 #        (0,     'ram'),          # Graphics                     (144582 B)
 #        (1,     'ram'),          # Graphics 32                   (23808 B)
@@ -63,13 +65,13 @@ assets_location = [
 ]
 assets_in_intflash = [index for (index, location) in assets_location if location == 'intflash']
 assets_in_ram = [index for (index, location) in assets_location if location == 'ram']
-assets_in_extflash = [index for index in range(57) if index not in assets_in_intflash and index not in assets_in_ram]
+assets_in_extflash = [index for index in range(178) if index not in assets_in_intflash and index not in assets_in_ram]
 
 
 def bundle_assets(assets_to_keep, path):
         assets_data_addr = []
         assets_data_length = []
-        with open("smw/assets/smw_assets.dat", mode="rb") as f:
+        with open("smw/smw_assets.dat", mode="rb") as f:
                 with open(path, "wb") as output:
                         output.write(struct.pack('<I', len(assets_to_keep)))
                         f.seek(80)

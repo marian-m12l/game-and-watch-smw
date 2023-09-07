@@ -527,8 +527,7 @@ static void LoadAssets() {
   LoadAssetsChunk(smw_ram_assets_length, smw_ram_assets);
 
   // Make sure all assets were loaded
-  // Asset 57 is not packaged since it contains the whole rom file and is not used
-  for (size_t i = 0; i < kNumberOfAssets - 1; i++) {
+  for (size_t i = 0; i < kNumberOfAssets; i++) {
     if (g_asset_ptrs[i] == 0) {
       Die("Missing asset");
     }
@@ -538,6 +537,10 @@ static void LoadAssets() {
 
 MemBlk FindInAssetArray(int asset, int idx) {
   return FindIndexInMemblk((MemBlk) { g_asset_ptrs[asset], g_asset_sizes[asset] }, idx);
+}
+
+const uint8 *FindPtrInAsset(int asset, uint32 addr) {
+  return FindAddrInMemblk((MemBlk){g_asset_ptrs[asset], g_asset_sizes[asset]}, addr);
 }
 
 

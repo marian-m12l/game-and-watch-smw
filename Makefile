@@ -125,6 +125,7 @@ smw/src/config.c \
 smw/src/common_rtl.c \
 smw/src/common_cpu_infra.c \
 smw/src/util.c \
+smw/src/lm.c \
 smw/src/snes/ppu.c \
 smw/src/snes/dma.c \
 smw/src/snes/dsp.c \
@@ -133,7 +134,6 @@ smw/src/snes/spc.c \
 smw/src/snes/snes.c \
 smw/src/snes/cpu.c \
 smw/src/snes/cart.c \
-smw/src/snes/input.c \
 smw/src/snes/tracing.c \
 
 # ASM sources
@@ -421,7 +421,7 @@ Core/Src/porting/smw_assets_%.c: scripts/bundle_all_assets.py scripts/update_all
 
 smw/assets/smw_assets.dat: smw/assets/smw.sfc | $(BUILD_DIR)
 	$(ECHO) "Extracting game resources"; \
-	cd smw/assets; $(PYTHON) restool.py --extract-from-rom -r smw.sfc; \
+	cd smw && make smw_assets.dat \
 	
 	
 $(BUILD_DIR):
