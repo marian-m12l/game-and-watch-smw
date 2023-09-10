@@ -105,10 +105,13 @@ Core/Src/crc32.c \
 Core/Src/stm32h7xx_it.c \
 Core/Src/stm32h7xx_hal_msp.c \
 Core/Src/system_stm32h7xx.c \
+Core/Src/filesystem.c \
 Core/Src/porting/smw_assets_in_intflash.c \
 Core/Src/porting/smw_assets_in_ram.c \
 Core/Src/porting/smw_assets_in_extflash.c \
 Core/Src/porting/common.c \
+Core/Src/porting/lib/littlefs/lfs.c \
+Core/Src/porting/lib/littlefs/lfs_util.c \
 smw/src/smw_rtl.c \
 smw/src/smw_00.c \
 smw/src/smw_01.c \
@@ -135,6 +138,12 @@ smw/src/snes/snes.c \
 smw/src/snes/cpu.c \
 smw/src/snes/cart.c \
 smw/src/snes/tracing.c \
+
+TAMP_DIR = Core/Src/porting/lib/tamp/tamp/_c_src/
+TAMP_C_SOURCES = \
+$(TAMP_DIR)/tamp/common.c \
+$(TAMP_DIR)/tamp/compressor.c \
+$(TAMP_DIR)/tamp/decompressor.c
 
 # ASM sources
 ASM_SOURCES =  \
@@ -296,7 +305,8 @@ C_DEFS =  \
 -DOVERCLOCK=$(OVERCLOCK) \
 -DRENDER_FPS=$(RENDER_FPS) \
 -DENABLE_SAVESTATE=$(ENABLE_SAVESTATE) \
--DFEATURES=$(FEATURES)
+-DFEATURES=$(FEATURES) \
+-DLFS_NO_MALLOC \
 
 
 # AS includes
@@ -306,12 +316,16 @@ AS_INCLUDES =
 C_INCLUDES =  \
 -ICore/Inc \
 -ICore/Inc/porting \
+-ICore/Src/porting/lib/littlefs/ \
+-ICore/Src/porting/lib/tamp/tamp/_c_src \
 -Ismw \
 -IDrivers/STM32H7xx_HAL_Driver/Inc \
 -IDrivers/STM32H7xx_HAL_Driver/Inc/Legacy \
 -IDrivers/CMSIS/Device/ST/STM32H7xx/Include \
 -IDrivers/CMSIS/Include \
 -I. \
+
+TAMP_C_INCLUDES += -I$(TAMP_DIR)
 
 
 # compile gcc flags
@@ -376,7 +390,8 @@ download_sdk: $(SDK_HEADERS) $(SDK_C_SOURCES) $(SDK_ASM_SOURCES)
 #######################################
 # list of objects
 OBJECTS = $(addprefix $(BUILD_DIR)/,$(notdir $(C_SOURCES:.c=.o) $(SDK_C_SOURCES:.c=.o)))
-vpath %.c $(sort $(dir $(C_SOURCES) $(SDK_C_SOURCES)))
+TAMP_OBJECTS = $(addprefix $(BUILD_DIR)/tamp/,$(notdir $(TAMP_C_SOURCES:.c=.o)))
+vpath %.c $(sort $(dir $(C_SOURCES) $(SDK_C_SOURCES) $(TAMP_C_SOURCES)))
 # list of ASM program objects
 OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o) $(SDK_ASM_SOURCES:.s=.o)))
 vpath %.s $(sort $(dir $(ASM_SOURCES) $(SDK_ASM_SOURCES)))
@@ -398,11 +413,15 @@ $(eval $(foreach obj,$(SDK_C_SOURCES) $(SDK_ASM_SOURCES),$(call sdk_obj_prereq_g
 $(BUILD_DIR)/%.o: %.c Makefile $(SDK_HEADERS) | $(BUILD_DIR) 
 	$(CC) -c $(CFLAGS) -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst)) $< -o $@
 
+$(BUILD_DIR)/tamp/%.o: $(TAMP_DIR)/tamp/%.c Makefile $(SDK_HEADERS) | $(BUILD_DIR)
+	$(V)$(ECHO) [ CC tamp ] $(notdir $<)
+	$(V)$(CC) -c $(CFLAGS) $(TAMP_C_INCLUDES) -Wa,-a,-ad,-alms=$(BUILD_DIR)/tamp/$(notdir $(<:.c=.lst)) $< -o $@
+
 $(BUILD_DIR)/%.o: %.s Makefile $(SDK_HEADERS) | $(BUILD_DIR)
 	$(AS) -c $(CFLAGS) $< -o $@
 
-$(BUILD_DIR)/$(TARGET).elf: assets_extraction $(OBJECTS) Makefile
-	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+$(BUILD_DIR)/$(TARGET).elf: assets_extraction $(OBJECTS) $(TAMP_OBJECTS) Makefile
+	$(CC) $(OBJECTS) $(TAMP_OBJECTS) $(LDFLAGS) -o $@
 	$(SZ) $@
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
@@ -425,7 +444,8 @@ smw/assets/smw_assets.dat: smw/assets/smw.sfc | $(BUILD_DIR)
 	
 	
 $(BUILD_DIR):
-	mkdir $@		
+	$(V)mkdir $@
+	$(V)mkdir $@/tamp		
 
 
 

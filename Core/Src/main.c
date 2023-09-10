@@ -47,6 +47,8 @@
 
 #include "common.h"
 
+#include "filesystem.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -716,58 +718,54 @@ void store_save(const uint8_t *flash_ptr, const uint8_t *data, size_t size)
 // SRAM is 2KB --> take a whole 4KB sector to avoid extflash misalignment
 uint8_t SAVE_SRAM_EXTFLASH[4096]  __attribute__((section (".saveflash"))) __attribute__((aligned(4096)));
 
-uint8_t* readSramImpl() {
-  return SAVE_SRAM_EXTFLASH;
+void readSramImpl(uint8_t* sram) {
+  if (fs_exists("/smw.srm")) {
+    fs_file_t *sramFile = fs_open("/smw.srm", FS_READ, FS_COMPRESS);
+    fs_read(sramFile, sram, 2048);
+    fs_close(sramFile);
+  } else {
+    memset(sram, 0, 2048);
+  }
 }
 void writeSramImpl(uint8_t* sram) {
-  store_save(SAVE_SRAM_EXTFLASH, sram, 2048);
+  fs_file_t *sramFile = fs_open("/smw.srm", FS_WRITE, FS_COMPRESS);
+  fs_write(sramFile, sram, 2048);
+  fs_close(sramFile);
 }
 
 
 #if ENABLE_SAVESTATE != 0
-uint16_t bufferCount = 0;
-uint32_t dstPos = 0;
+fs_file_t *savestateFile;
+
+void readSaveStateInitImpl() {
+  if (fs_exists("/smw.sav")) {
+    savestateFile = fs_open("/smw.sav", FS_READ, FS_COMPRESS);
+  }
+}
+void readSaveStateImpl(uint8_t* data, size_t size) {
+  if (savestateFile != NULL) {
+    fs_read(savestateFile, data, size);
+  } else {
+    memset(data, 0, size);
+  }
+}
+void readSaveStateFinalizeImpl() {
+  if (savestateFile != NULL) {
+    fs_close(savestateFile);
+    savestateFile = NULL;
+  }
+}
 
 void writeSaveStateInitImpl() {
-  dstPos = 0;
-  bufferCount = 0;
+  // TODO create folder?
+  savestateFile = fs_open("/smw.sav", FS_WRITE, FS_COMPRESS);
 }
 void writeSaveStateImpl(uint8_t* data, size_t size) {
-  uint32_t srcPos = 0;
-  size_t remaining = size;
-  if (bufferCount > 0) {
-    size_t a = 4096 - bufferCount;
-    size_t b = size;
-    size_t bufferPad = a < b ? a : b;
-    memcpy(savestateBuffer + bufferCount, data, bufferPad);
-    bufferCount += bufferPad;
-    remaining -= bufferPad;
-    srcPos += bufferPad;
-    if (bufferCount == 4096) {
-      store_save(SAVESTATE_EXTFLASH + dstPos, savestateBuffer, 4096);
-      dstPos += 4096;
-      bufferCount = 0;
-    }
-  }
-  while (remaining >= 4096) {
-    store_save(SAVESTATE_EXTFLASH + dstPos, data + srcPos, 4096);
-    dstPos += 4096;
-    srcPos += 4096;
-    remaining -= 4096;
-    wdog_refresh();
-  }
-  if (remaining > 0) {
-    memcpy(savestateBuffer, data + srcPos, remaining);
-    bufferCount += remaining;
-  }
+  // FIXME Optimize writes
+  fs_write(savestateFile, data, size);
 }
 void writeSaveStateFinalizeImpl() {
-  if (bufferCount > 0) {
-    store_save(SAVESTATE_EXTFLASH + dstPos, savestateBuffer, bufferCount);
-    dstPos += bufferCount;
-    bufferCount = 0;
-  }
-  writeSaveStateInitImpl();
+  fs_close(savestateFile);
 }
 #endif
 
@@ -1102,6 +1100,8 @@ int main(void)
     
 
   bq24072_init();
+
+  fs_init();
 
   /* USER CODE END 2 */
 
