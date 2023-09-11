@@ -502,6 +502,19 @@ flash_as_app: $(BUILD_DIR)/$(TARGET)_ram_app.bin.tamp $(BUILD_DIR)/$(TARGET)_ext
 .PHONY: flash_as_app
 
 
+# Transfers save files from the device to the host machine
+flash_saves_backup:
+	@$(GNWMANAGER) pull smw backup
+	@echo "Backup to \"backup/\" complete."
+.PHONY: flash_saves_backup
+
+# Transfers save files from the host machine to the device
+flash_saves_restore:
+	@$(GNWMANAGER) mkdir smw -- push smw backup/*
+	@echo "Restore from \"backup/\" complete."
+.PHONY: flash_saves_restore
+
+
 reset:
 	$(OPENOCD) -f $(OCDIFACE) -c "init; reset; exit"
 .PHONY: reset

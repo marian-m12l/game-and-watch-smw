@@ -81,15 +81,12 @@ __EXTFLASH_BASE__ = 0x90000000;  /* Beginning of addressable extflash addresses 
 __EXTFLASH_START__ = __EXTFLASH_BASE__ + __EXTFLASH_OFFSET__;  /* Beginning of where we're going to store emulator and rom data */
 
 
-__SAVEFLASH_LENGTH__ = 4096 + (ENABLE_SAVESTATE ? (4096 * 66) : 0);
 __CONFIGFLASH_LENGTH__ = 4096;
 __FBFLASH_LENGTH__ = ENABLE_SCREENSHOT ? ((320 * 240 * 2 + 4095) / 4096) * 4096 : 0;
 
-__EXTFLASH_LENGTH__ = __EXTFLASH_TOTAL_LENGTH__ - (__SAVEFLASH_LENGTH__ + __CONFIGFLASH_LENGTH__ + __FBFLASH_LENGTH__);
+__EXTFLASH_LENGTH__ = __EXTFLASH_TOTAL_LENGTH__ - (__CONFIGFLASH_LENGTH__ + __FBFLASH_LENGTH__);
 __EXTFLASH_END__ = __EXTFLASH_START__ + __EXTFLASH_LENGTH__;
-__SAVEFLASH_START__ = __EXTFLASH_END__;
-__SAVEFLASH_END__   = __SAVEFLASH_START__ + __SAVEFLASH_LENGTH__;
-__CONFIGFLASH_START__ = __SAVEFLASH_END__;
+__CONFIGFLASH_START__ = __EXTFLASH_END__;
 __CONFIGFLASH_END__   = __CONFIGFLASH_START__ + __CONFIGFLASH_LENGTH__;
 __FBFLASH_START__ = __CONFIGFLASH_END__;
 __FBFLASH_END__   = __FBFLASH_START__ + __FBFLASH_LENGTH__;
@@ -115,7 +112,6 @@ MEMORY
 
   FLASH    (xr ) : ORIGIN = __INTFLASH__,  LENGTH = __FLASH_LENGTH__
   EXTFLASH (xr ) : ORIGIN = __EXTFLASH_START__,  LENGTH = __EXTFLASH_LENGTH__
-  SAVEFLASH(xr ) : ORIGIN = __SAVEFLASH_START__, LENGTH = __SAVEFLASH_LENGTH__
   CONFIGFLASH(xr ) : ORIGIN = __CONFIGFLASH_START__, LENGTH = __CONFIGFLASH_LENGTH__
   FBFLASH(xr ) : ORIGIN = __FBFLASH_START__, LENGTH = __FBFLASH_LENGTH__
 }
@@ -216,11 +212,6 @@ SECTIONS
     . = ALIGN(4);
     build/smw_assets_in_extflash.o (.text .text* .rodata .rodata*)
   } >EXTFLASH
-
-  ._saveflash (NOLOAD) :
-  {
-    *(.saveflash)
-  } > SAVEFLASH
 
   ._configflash (NOLOAD):
   {
@@ -503,9 +494,6 @@ SECTIONS
 
   __extflash_start__ = LOADADDR(._itcram_hot);
   __extflash_end__ = __extflash_start__ + SIZEOF(._itcram_hot) + SIZEOF(._dtcram_hot) + SIZEOF(._ahbram_hot) + SIZEOF(._ram_exec) + SIZEOF(._extflash);
-
-  __saveflash_start__ = ADDR(._saveflash);
-  __saveflash_end__ = __saveflash_start__ + SIZEOF(._saveflash);
   
   __configflash_start__ = ADDR(._configflash);
   __configflash_end__ = __configflash_start__ + SIZEOF(._configflash);

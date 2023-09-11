@@ -346,10 +346,11 @@ struct SpcPlayer *g_spc_player;
 #define AUDIO_BUFFER_LENGTH_DMA (2 * AUDIO_BUFFER_LENGTH) // ((2 * AUDIO_SAMPLE_RATE) / FRAMERATE)  // DMA buffer contains 2 frames worth of audio samples in a ring buffer
 
 
+#define SRAM_SAVE_PATH "/smw/smw.srm"
+#define SAVESTATE_PATH "/smw/smw.sav"
+
 #if ENABLE_SAVESTATE != 0
-// Needs to hold 268708 bytes --> 4KB * 66 = 270336
-uint8_t SAVESTATE_EXTFLASH[4096 * 66]  __attribute__((section (".saveflash"))) __attribute__((aligned(4096)));
-uint8_t savestateBuffer[4096] __attribute__((section (".savestate_buffer")));
+uint8_t savestateBuffer[(4096)] __attribute__((section (".savestate_buffer")));
 #endif
 
 
@@ -657,13 +658,13 @@ static void HandleCommand(uint32 j, bool pressed) {
     for (int i = 0; i < AUDIO_BUFFER_LENGTH_DMA; i++) {
         audiobuffer_dma[i] = 0;
     }
-    RtlSaveLoad(kSaveLoad_Load, &SAVESTATE_EXTFLASH);
+    RtlSaveLoad(kSaveLoad_Load, 0);
   } else if (j == kKeys_Save) {
     // Mute
     for (int i = 0; i < AUDIO_BUFFER_LENGTH_DMA; i++) {
         audiobuffer_dma[i] = 0;
     }
-    RtlSaveLoad(kSaveLoad_Save, &SAVESTATE_EXTFLASH);
+    RtlSaveLoad(kSaveLoad_Save, 0);
   }
   #endif
 }
@@ -673,7 +674,6 @@ void store_erase(const uint8_t *flash_ptr, uint32_t size)
 {
   // Only allow addresses in the areas meant for erasing and writing.
   assert(
-    ((flash_ptr >= &__SAVEFLASH_START__)   && ((flash_ptr + size) <= &__SAVEFLASH_END__)) ||
     ((flash_ptr >= &__configflash_start__) && ((flash_ptr + size) <= &__configflash_end__)) ||
     ((flash_ptr >= &__fbflash_start__) && ((flash_ptr + size) <= &__fbflash_end__))
   );
@@ -714,13 +714,10 @@ void store_save(const uint8_t *flash_ptr, const uint8_t *data, size_t size)
   OSPI_EnableMemoryMappedMode();
 }
 
-// TODO In header file??
-// SRAM is 2KB --> take a whole 4KB sector to avoid extflash misalignment
-uint8_t SAVE_SRAM_EXTFLASH[4096]  __attribute__((section (".saveflash"))) __attribute__((aligned(4096)));
 
 void readSramImpl(uint8_t* sram) {
-  if (fs_exists("/smw.srm")) {
-    fs_file_t *sramFile = fs_open("/smw.srm", FS_READ, FS_COMPRESS);
+  if (fs_exists(SRAM_SAVE_PATH)) {
+    fs_file_t *sramFile = fs_open(SRAM_SAVE_PATH, FS_READ, FS_COMPRESS);
     fs_read(sramFile, sram, 2048);
     fs_close(sramFile);
   } else {
@@ -728,18 +725,22 @@ void readSramImpl(uint8_t* sram) {
   }
 }
 void writeSramImpl(uint8_t* sram) {
-  fs_file_t *sramFile = fs_open("/smw.srm", FS_WRITE, FS_COMPRESS);
+  // TODO create folder?
+  fs_file_t *sramFile = fs_open(SRAM_SAVE_PATH, FS_WRITE, FS_COMPRESS);
   fs_write(sramFile, sram, 2048);
   fs_close(sramFile);
 }
 
 
 #if ENABLE_SAVESTATE != 0
+uint16_t bufferCount = 0;
+uint32_t dstPos = 0;
 fs_file_t *savestateFile;
+#define BLOCK_SIZE (sizeof(savestateBuffer))
 
 void readSaveStateInitImpl() {
-  if (fs_exists("/smw.sav")) {
-    savestateFile = fs_open("/smw.sav", FS_READ, FS_COMPRESS);
+  if (fs_exists(SAVESTATE_PATH)) {
+    savestateFile = fs_open(SAVESTATE_PATH, FS_READ, FS_COMPRESS);
   }
 }
 void readSaveStateImpl(uint8_t* data, size_t size) {
@@ -757,15 +758,50 @@ void readSaveStateFinalizeImpl() {
 }
 
 void writeSaveStateInitImpl() {
+  dstPos = 0;
+  bufferCount = 0;
   // TODO create folder?
-  savestateFile = fs_open("/smw.sav", FS_WRITE, FS_COMPRESS);
+  savestateFile = fs_open(SAVESTATE_PATH, FS_WRITE, FS_COMPRESS);
 }
 void writeSaveStateImpl(uint8_t* data, size_t size) {
   // FIXME Optimize writes
-  fs_write(savestateFile, data, size);
+  uint32_t srcPos = 0;
+  size_t remaining = size;
+  if (bufferCount > 0) {
+    size_t a = BLOCK_SIZE - bufferCount;
+    size_t b = size;
+    size_t bufferPad = a < b ? a : b;
+    memcpy(savestateBuffer + bufferCount, data, bufferPad);
+    bufferCount += bufferPad;
+    remaining -= bufferPad;
+    srcPos += bufferPad;
+    if (bufferCount == BLOCK_SIZE) {
+      fs_write(savestateFile, savestateBuffer, BLOCK_SIZE);
+      dstPos += BLOCK_SIZE;
+      bufferCount = 0;
+    }
+  }
+  while (remaining >= BLOCK_SIZE) {
+    fs_write(savestateFile, data + srcPos, BLOCK_SIZE);
+    dstPos += BLOCK_SIZE;
+    srcPos += BLOCK_SIZE;
+    remaining -= BLOCK_SIZE;
+    wdog_refresh();
+  }
+  if (remaining > 0) {
+    memcpy(savestateBuffer, data + srcPos, remaining);
+    bufferCount += remaining;
+  }
 }
 void writeSaveStateFinalizeImpl() {
+  if (bufferCount > 0) {
+    fs_write(savestateFile, savestateBuffer, bufferCount);
+    dstPos += bufferCount;
+    bufferCount = 0;
+  }
   fs_close(savestateFile);
+  dstPos = 0;
+  bufferCount = 0;
 }
 #endif
 
