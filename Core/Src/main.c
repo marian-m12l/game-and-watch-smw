@@ -736,6 +736,11 @@ void writeSramImpl(uint8_t* sram) {
 uint16_t bufferCount = 0;
 uint32_t dstPos = 0;
 
+unsigned int writeSaveStateCalculateCRC(size_t sizeOfData) {
+  unsigned int crc = crc32_le(0, SAVESTATE_EXTFLASH + sizeof(size_t), sizeOfData);
+  return crc;
+}
+
 void writeSaveStateInitImpl() {
   dstPos = 0;
   bufferCount = 0;
@@ -816,6 +821,9 @@ void app_main(void)
     //uint32 curTick = 0;
     //uint32 frameCtr = 0;
     bool audiopaused = true;
+    #if ENABLE_SAVESTATE != 0
+    bool justStarted = true;
+    #endif
 
     // Skip frames
     uint32 prevFrameTick = 0;
@@ -1033,6 +1041,10 @@ void app_main(void)
         //}
         prev_buttons = buttons;
 
+        #if ENABLE_SAVESTATE != 0
+        if (justStarted && !(buttons & B_PAUSE)) HandleCommand(kKeys_Load, true);
+        justStarted = false;
+        #endif
     }
 
     return 0;
