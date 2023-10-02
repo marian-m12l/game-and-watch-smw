@@ -736,6 +736,11 @@ void writeSramImpl(uint8_t* sram) {
 uint16_t bufferCount = 0;
 uint32_t dstPos = 0;
 
+unsigned int writeSaveStateCalculateCRC(size_t sizeOfData) {
+  unsigned int crc = crc32_le(0, SAVESTATE_EXTFLASH + sizeof(size_t), sizeOfData);
+  return crc;
+}
+
 void writeSaveStateInitImpl() {
   dstPos = 0;
   bufferCount = 0;
@@ -828,6 +833,10 @@ void app_main(void)
     
     uint8_t brightness = settings_Backlight_get();
     lcd_backlight_set(backlightLevels[brightness]);
+
+    #if ENABLE_SAVESTATE != 0
+    if (!(buttons_get() & B_PAUSE)) HandleCommand(kKeys_Load, true);
+    #endif
 
     uint32_t prev_buttons = 0;
     uint32_t prev_power_ms = 0;
@@ -1032,7 +1041,6 @@ void app_main(void)
         }
         //}
         prev_buttons = buttons;
-
     }
 
     return 0;

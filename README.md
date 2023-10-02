@@ -78,3 +78,4 @@ Edit the `FEATURE_*` values in `Makefile` to enable additional features and bug 
 | Increase Brightness | `GAME + Up` | `GAME + Up` |
 | Power Off | `POWER`| `POWER` |
 | Power Off without saving savestate | `POWER + PAUSE`| `POWER + PAUSE` |
+| Power On without loading savestate | `POWER + PAUSE`| `POWER + PAUSE` |
