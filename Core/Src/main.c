@@ -821,9 +821,6 @@ void app_main(void)
     //uint32 curTick = 0;
     //uint32 frameCtr = 0;
     bool audiopaused = true;
-    #if ENABLE_SAVESTATE != 0
-    bool justStarted = true;
-    #endif
 
     // Skip frames
     uint32 prevFrameTick = 0;
@@ -836,6 +833,10 @@ void app_main(void)
     
     uint8_t brightness = settings_Backlight_get();
     lcd_backlight_set(backlightLevels[brightness]);
+
+    #if ENABLE_SAVESTATE != 0
+    if (!(buttons_get() & B_PAUSE)) HandleCommand(kKeys_Load, true);
+    #endif
 
     uint32_t prev_buttons = 0;
     uint32_t prev_power_ms = 0;
@@ -1040,11 +1041,6 @@ void app_main(void)
         }
         //}
         prev_buttons = buttons;
-
-        #if ENABLE_SAVESTATE != 0
-        if (justStarted && !(buttons & B_PAUSE)) HandleCommand(kKeys_Load, true);
-        justStarted = false;
-        #endif
     }
 
     return 0;
