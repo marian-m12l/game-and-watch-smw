@@ -58,3 +58,23 @@ Edit the `FEATURE_*` values in `Makefile` to enable additional features and bug 
 | Build flag    | Description |
 | ------------- | ------------- |
 | `FEATURE_SAVE_AFTER_EACH_BEATEN_LEVEL` | Save to SRAM after each beaten level (instead of saving after castle is beaten).<br>SRAM save remains valid/compatible with emulators. |
+
+## Button bindings
+
+| Description | Binding on Mario units | Binding on Zelda units |
+| ----------- | ---------------------- | ---------------------- |
+| `A` button (Spin Jump) | `PAUSE` | `START` |
+| `B` button (Regular Jump) | `A` | `A` |
+| `X`/`Y` button (Dash/Shoot) | `B` | `B` |
+| `Select` button (Use Reserve Item) | `TIME` | `SELECT` |
+| `Start` button (Pause Game) | `GAME + PAUSE` | `PAUSE` |
+| `L` button (Scroll Screen Left) | `-` | `GAME + SELECT` |
+| `R` button (Scroll Screen Right) | `-` | `GAME + START` |
+| Save savestate, if enabled | `GAME + A` | `GAME + A` |
+| Load savestate, if enabled | `GAME + B` | `GAME + B` |
+| Decrease Volume | `GAME + Left` | `GAME + Left` |
+| Increase Volume | `GAME + Right` | `GAME + Right` |
+| Decrease Brightness | `GAME + Down` | `GAME + Down` |
+| Increase Brightness | `GAME + Up` | `GAME + Up` |
+| Power Off | `POWER`| `POWER` |
+| Power Off without saving savestate | `POWER + PAUSE`| `POWER + PAUSE` |
