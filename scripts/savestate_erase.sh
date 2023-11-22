@@ -12,7 +12,7 @@ ELF="$1"
 
 address=$(get_symbol __SAVEFLASH_START__)
 address=$(($address + 4096))
-size=$((4096*66))   # FIXME savestate size?
+size=$((4096*66))
 
 echo "Erasing savestate data:"
 printf "    save_address=0x%08x\n" $address
