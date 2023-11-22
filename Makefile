@@ -414,12 +414,12 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 
 assets_extraction: Core/Src/porting/smw_assets_in_extflash.c Core/Src/porting/smw_assets_in_intflash.c Core/Src/porting/smw_assets_in_ram.c
 
-Core/Src/porting/smw_assets_%.c: scripts/bundle_all_assets.py scripts/update_all_assets.py smw/assets/smw_assets.dat | $(BUILD_DIR)
+Core/Src/porting/smw_assets_%.c: scripts/bundle_all_assets.py scripts/update_all_assets.py smw/smw_assets.dat | $(BUILD_DIR)
 	$(PYTHON) ./scripts/bundle_all_assets.py
 	$(PYTHON) ./scripts/update_all_assets.py
 
 
-smw/assets/smw_assets.dat: smw/assets/smw.sfc | $(BUILD_DIR)
+smw/smw_assets.dat: smw/assets/smw.sfc | $(BUILD_DIR)
 	$(ECHO) "Extracting game resources"; \
 	cd smw && make smw_assets.dat \
 	
