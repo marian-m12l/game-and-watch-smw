@@ -1,3 +1,7 @@
+> [!WARNING]
+> :warning: This port is now part of retro-go. Please follow [these instructions](https://github.com/sylverb/game-and-watch-retro-go#super-mario-world), unless you want to flash SMW separately. :warning:
+
+
 # Port of reverse engineered Super Mario World for the Game and Watch
 
 All credits for reverse engineering goes to https://github.com/snesrev/smw
